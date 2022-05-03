@@ -1,0 +1,33 @@
+node 
+{
+    echo "Job Name is : ${env.JOB_NAME}"
+    echo "Node Name is : ${env.NODE_NAME}"
+    
+def mavenHome=tool name:'maven3.8.5'
+
+stage('Getcodefromgit')
+{
+git branch: 'development', credentialsId: 'e39aec36-afa6-4ca7-be9c-953cc7df589b', url: 'https://github.com/devopsmarch7/maven-web-application.git'
+}
+stage('Buildmaven')
+{
+sh "${mavenHome}/bin/mvn clean package"
+}
+
+stage('ExecuteinSonar')
+{
+sh "${mavenHome}/bin/mvn sonar:sonar"
+}
+
+stage('NexusArtifacts')
+{
+sh "${mavenHome}/bin/mvn deploy"
+}
+stage('Tomcatupload')
+{
+sshagent(['1e00acb9-70fd-4745-9e73-52bb62f32989']) 
+    {
+	sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.232.213.16:/opt/apache-tomcat-9.0.62/webapps"
+	}
+}
+}//nodeclosing
